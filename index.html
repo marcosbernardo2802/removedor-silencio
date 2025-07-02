@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remover Silêncio do Áudio - Crônicas Estelares</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        // Using Exo 2 as the main font, consistent with the portal
+                        sans: ['Exo 2', 'sans-serif'],
+                    },
+                    colors: {
+                        // Define a 'primary' color that uses the CSS variable
+                        primary: 'var(--color-primary)',
+                        // Define 'secondary' and 'success' colors for buttons
+                        secondary: 'var(--color-secondary)',
+                        success: 'var(--color-success)',
+                        // Keep other specific dark/light colors if they are used elsewhere directly
+                        'color-bg-dark': '#0a0f18',
+                        'color-text-dark': '#e0e0e0',
+                        'color-card-bg-dark': '#101a2d',
+                        'color-card-border-dark': '#223354',
+                        'color-shadow-dark': 'rgba(0, 242, 254, 0.2)',
+
+                        'color-bg-light': '#f4f7f9',
+                        'color-text-light': '#333333',
+                        'color-card-bg-light': '#ffffff',
+                        'color-card-border-light': '#d1d9e0',
+                        'color-shadow-light': 'rgba(0, 0, 0, 0.1)',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Exo 2 Font from Google Fonts (main font for the portal) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* ---- VARIÁVEIS DE TEMA (Unificadas com o portal principal) ---- */
+        :root {
+            --color-bg: #0a0f18;
+            --color-text: #e0e0e0;
+            --color-primary: #00f2fe;
+            --color-secondary: #e63946; /* From your other app */
+            --color-card-bg: rgba(16, 26, 45, 0.7); /* Translucent dark */
+            --color-card-border: #223354;
+            --color-shadow: rgba(0, 242, 254, 0.2);
+            --color-success: #28a745; /* From your other app */
+            --font-main: 'Exo 2', sans-serif;
+        }
+
+        body.light-theme {
+            --color-bg: #f4f7f9;
+            --color-text: #333333;
+            --color-primary: #005fbd;
+            --color-secondary: #d90429; /* From your other app */
+            --color-card-bg: rgba(255, 255, 255, 0.7); /* Translucent light */
+            --color-card-border: #d1d9e0;
+            --color-shadow: rgba(0, 0, 0, 0.1);
+            --color-success: #218838; /* From your other app */
+        }
+
+        body {
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            font-family: var(--font-main);
+            line-height: 1.6; /* Added for better readability */
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .app-card { /* Renamed from app-container to app-card for consistency */
+            background-color: var(--color-card-bg);
+            backdrop-filter: blur(10px); /* From your other app */
+            -webkit-backdrop-filter: blur(10px); /* From your other app */
+            border: 1px solid var(--color-card-border);
+            transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1); /* Default shadow for dark theme */
+        }
+        .light-theme .app-card {
+            box-shadow: 0 8px 25px var(--color-shadow); /* Light theme shadow */
+        }
+        .text-primary {
+            color: var(--color-primary);
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            background: var(--color-primary);
+        }
+        input[type="range"]::-moz-range-thumb {
+            background: var(--color-primary);
+        }
+        /* Style for the theme toggle button */
+        .floating-button { /* Unified floating button styles */
+            position: fixed; z-index: 1000; cursor: pointer;
+            background-color: var(--color-card-bg);
+            border: 1px solid var(--color-card-border);
+            border-radius: 50%; width: 40px; height: 40px;
+            display: flex; justify-content: center; align-items: center;
+            transition: all 0.3s ease;
+        }
+        .floating-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px var(--color-shadow);
+        }
+        .floating-button svg {
+            width: 20px; height: 20px; fill: var(--color-primary);
+            transition: fill 0.3s ease;
+        }
+        .theme-switcher { top: 20px; right: 20px; }
+        .back-to-portal { top: 20px; left: 20px; } /* New back to portal button */
+        .light-theme #theme-icon-dark, body:not(.light-theme) #theme-icon-light { display: none; }
+
+
+        /* Custom file input button styling */
+        .custom-file-upload {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem; /* py-3 px-6 */
+            font-size: 1rem; /* Alterado de 1.125rem para 1rem */
+            font-weight: 700; /* font-bold */
+            border-radius: 9999px; /* rounded-full */
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: var(--color-primary);
+            color: var(--color-bg); /* Text color for dark theme */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* shadow-md */
+        }
+        .custom-file-upload:hover {
+            filter: brightness(0.9); /* Slightly darker on hover */
+            transform: scale(1.05); /* hover:scale-105 */
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3); /* shadow-lg */
+        }
+        .custom-file-upload svg { /* Icon inside custom file upload button */
+            width: 18px; /* Diminuído de 24px para 18px */
+            height: 18px; /* Diminuído de 24px para 18px */
+            fill: currentColor; /* Inherit color from button text */
+            margin-right: 8px; /* Add some spacing */
+        }
+        .light-theme .custom-file-upload {
+            color: white; /* Text color for light theme */
+        }
+
+
+        /* Canvas styling */
+        #waveformCanvas {
+            background-color: #333; /* Dark background for waveform */
+            border-radius: 8px;
+            margin-top: 1rem;
+            width: 100%;
+            height: 150px; /* Fixed height for consistency */
+        }
+        .light-theme #waveformCanvas {
+            background-color: #e0e0e0; /* Light background for waveform in light theme */
+        }
+        #audioPreview {
+            background-color: var(--color-card-bg); /* Match card background */
+        }
+
+        /* Main actions buttons */
+        .main-actions { display: flex; gap: 1rem; margin-top: 1.5rem; }
+        .main-actions button {
+            flex-grow: 1; padding: 12px; font-size: 1.1em; font-weight: 700; border-radius: 8px; border: none;
+            cursor: pointer; transition: all 0.3s ease; color: #fff; /* Default text color for buttons */
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .main-actions button:hover { transform: translateY(-2px); opacity: 0.9; }
+        .main-actions .process-btn { background: var(--color-primary); color: var(--color-bg); /* Text color from portal's convert-btn */ }
+        .light-theme .main-actions .process-btn { color: #fff; } /* Text color for light theme */
+        .main-actions .download-btn { background: var(--color-success); }
+        .main-actions .clear-btn { background: var(--color-secondary); }
+
+        /* Icons within buttons */
+        .main-actions button svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor; /* Inherit color from button text */
+            transition: fill 0.3s ease;
+        }
+
+        /* ---- BANNER PRINCIPAL (Estilos copiados do portal) ---- */
+        .tool-banner { /* New banner specific to tool apps */
+            margin-bottom: 3rem;
+        }
+        .tool-banner a {
+            display: block;
+            line-height: 0;
+        }
+        .tool-banner-image {
+            width: 100%;
+            height: auto;
+            max-height: 125px;
+            object-fit: cover;
+            border-radius: 12px;
+            border: 1px solid var(--color-card-border);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        .tool-banner-image:hover {
+            transform: scale(1.02);
+            opacity: 0.9;
+        }
+
+        /* ---- RODAPÉ (Estilos copiados do portal) ---- */
+        footer {
+            margin-top: 2rem;
+            padding-top: 2rem; /* Added padding top for consistency */
+            border-top: 1px solid var(--color-card-border);
+            color: #888;
+            transition: border-color 0.3s ease;
+        }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 2rem; } /* Re-added container for footer */
+
+        .footer-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            text-align: center;
+        }
+        
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-link, .donation-link, .email-link {
+            color: var(--color-text);
+            text-decoration: none;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: color 0.3s, text-shadow 0.3s;
+        }
+        .footer-link:hover, .donation-link:hover, .email-link:hover {
+            color: var(--color-primary);
+            text-shadow: 0 0 8px var(--color-shadow);
+        }
+        .footer-link:hover span, .donation-link:hover span, .email-link:hover span {
+             text-decoration: underline;
+        }
+        .youtube-icon {
+            width: 28px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+        
+        .donation-link svg, .email-link svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--color-primary);
+            transition: fill 0.3s;
+        }
+
+        .copyright-text {
+            font-size: 0.9em;
+            color: #888;
+        }
+
+        /* Footer link text color for light theme */
+        body.light-theme .footer-link,
+        body.light-theme .donation-link,
+        body.light-theme .email-link {
+            color: #000000; /* Pure black for light theme */
+        }
+
+        /* NEW: Text color for gray-400 elements in light theme */
+        body.light-theme .text-gray-400 {
+            color: #000000; /* Pure black for light theme */
+        }
+        /* NEW: Text color for labels in light theme */
+        body.light-theme label {
+            color: #000000; /* Pure black for light theme labels */
+        }
+        /* NEW: Text color for status message in light theme */
+        body.light-theme #statusMessage {
+            color: #000000; /* Pure black for light theme status message */
+        }
+
+        /* Line below main title */
+        .app-card h1 {
+            border-bottom: 1px solid var(--color-card-border); /* Thin line */
+            padding-bottom: 1rem; /* Space between title and line */
+            margin-bottom: 1.5rem; /* Space between line and next section */
+        }
+
+        /* RESPONSIVIDADE DO BANNER (Copiada do portal) */
+        @media (max-width: 768px) {
+            .banner-content h1 { font-size: 2.8rem; }
+            .banner-content p { font-size: 1.1rem; }
+            .main-actions { flex-direction: column; } /* Stack buttons on small screens */
+        }
+
+        /* Spinner animation */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        /* Drag and Drop styles */
+        .drop-zone-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 242, 254, 0.2); /* Primary color with transparency */
+            border: 3px dashed var(--color-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--color-primary);
+            pointer-events: none; /* Allows clicks to pass through to elements below */
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 10; /* Above other app content */
+        }
+        .drop-zone-overlay.drag-over {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen font-sans">
+    <!-- Back to Portal Button -->
+    <a href="https://cronicasestelares.vercel.app/" class="floating-button back-to-portal" title="Voltar ao portal Crônicas Estelares">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    </a>
+    <!-- Theme Toggle Button -->
+    <div id="theme-toggle" class="floating-button theme-switcher">
+        <svg id="theme-icon-dark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21.64,13.14C20.97,13.14 20.3,13.42 19.82,13.9C19.34,14.38 19.06,15.05 19.06,15.72C19.06,16.39 19.34,17.06 19.82,17.54C20.3,18.02 20.97,18.3 21.64,18.3C22.31,18.3 22.98,18.02 23.46,17.54C23.94,17.06 24.22,16.39 24.22,15.72C24.22,15.05 23.94,14.38 23.46,13.9C22.98,13.42 22.31,13.14 21.64,13.14Z M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22C15.93,22 19.33,19.79 20.94,16.63C17.9,17.56 14.62,16.4 12.5,13.82C10.38,11.24 10.45,7.87 12.68,5.3C11.39,4.28 9.81,3.75 8.12,4.05C5.91,4.5 4.05,6.17 3.34,8.36C2.63,10.55 3.19,12.94 4.83,14.57C6.47,16.21 8.85,16.78 11.05,16.07C11.33,16 11.62,15.95 11.9,15.9C11.53,15.33 11.25,14.68 11.09,14C10.23,10.82 11.7,7.5 14.5,5.8C15.45,5.23 16.5,4.96 17.55,5C17.84,2.92 15.15,2 12,2Z"/></svg>
+        <svg id="theme-icon-light" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5V2.5H11V4.5H12M18.6,6.5L19.8,5.3L18.4,3.9L17.2,5.1L18.6,6.5M20.5,11H22.5V12H20.5V11M17.2,18.9L18.4,20.1L19.8,18.7L18.6,17.5L17.2,18.9M12,20.5V22.5H13V20.5H12M5.4,17.5L4.2,18.7L2.8,17.3L4,16.1L5.4,17.5M3.5,12H1.5V11H3.5V12M6.8,5.1L5.6,3.9L4.2,5.3L5.4,6.5L6.8,5.1Z"/></svg>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow container mx-auto px-4 py-8">
+        <div class="tool-banner">
+            <a href="https://www.youtube.com/@CronicasEstelaress" target="_blank" rel="noopener noreferrer" title="Visite o canal Crônicas Estelares no YouTube">
+                <img class="tool-banner-image" src="https://raw.githubusercontent.com/marcosbernardo2802/portal/main/images/baner-app.png" alt="Banner da aplicação" onerror="this.onerror=null;this.src='https://placehold.co/900x125/1a2b4a/00f2fe?text=Cr%C3%B4nicas+Estelares+App';">
+            </a>
+        </div>
+
+        <div id="appCard" class="app-card p-8 rounded-lg relative">
+            <!-- Drag and Drop Overlay -->
+            <div id="dropZoneOverlay" class="drop-zone-overlay">
+                Solte o arquivo de áudio aqui!
+            </div>
+
+            <h1 class="text-3xl font-bold text-center mb-6 text-primary">Remover Silêncio do Áudio</h1>
+
+            <!-- File Input -->
+            <div class="mb-6">
+                <label for="audioFile" class="block text-lg font-medium mb-2">
+                    <div class="flex items-center gap-2">
+                        <span>Selecione um arquivo de áudio:</span>
+                        <span id="fileNameDisplay" class="text-sm text-gray-400 italic">Nenhum arquivo selecionado</span>
+                    </div>
+                </label>
+                <input type="file" id="audioFile" accept="audio/*" class="hidden">
+                <label for="audioFile" class="custom-file-upload" title="Clique para selecionar ou arraste e solte um arquivo de áudio">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+                    Enviar Arquivo
+                </label>
+            </div>
+
+            <!-- Controls for Silence Detection -->
+            <div class="mb-6 space-y-4">
+                <div>
+                    <label for="silenceThreshold" class="block text-lg font-medium mb-2">
+                        Limite de Silêncio (<span id="thresholdValue">0.02</span>):
+                    </label>
+                    <input type="range" id="silenceThreshold" min="0.001" max="0.1" step="0.001" value="0.02"
+                        class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                    <p class="text-sm text-gray-400 mt-1">Abaixo deste valor, o áudio é considerado silêncio. Valores menores detectam silêncios mais sutis.</p>
+                </div>
+
+                <div>
+                    <label for="minSilenceDuration" class="block text-lg font-medium mb-2">
+                        Duração Mínima do Silêncio (<span id="durationValue">1.0</span> segundos):
+                    </label>
+                    <input type="range" id="minSilenceDuration" min="0.1" max="3.0" step="0.1" value="1.0"
+                        class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                    <p class="text-sm text-gray-400 mt-1">Silêncios com duração menor que este valor não serão removidos.</p>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="main-actions">
+                <button id="processAudioBtn"
+                    class="process-btn shadow-lg hover:shadow-xl" title="Processar o áudio para remover silêncios">
+                    <span id="processBtnIcon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+                    </span>
+                    <span id="processBtnText">Processar Áudio</span>
+                </button>
+                <button id="downloadAudioBtn" disabled
+                    class="download-btn shadow-lg hover:shadow-xl" title="Baixar o arquivo de áudio processado">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                    Baixar Áudio Processado
+                </button>
+                <button id="clearAudioBtn"
+                    class="clear-btn shadow-lg hover:shadow-xl" title="Limpar o áudio atual e redefinir o aplicativo">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                    Limpar
+                </button>
+            </div>
+
+            <!-- Status Message -->
+            <div id="statusMessage" class="text-center text-sm mt-4 text-gray-300">
+                Aguardando arquivo de áudio...
+            </div>
+
+            <!-- Waveform Canvas -->
+            <div class="mt-8">
+                <h3 class="text-xl font-semibold mb-3 text-primary">Visualização da Forma de Onda:</h3>
+                <canvas id="waveformCanvas" class="w-full h-40 border border-gray-600 rounded-lg"></canvas>
+                <div class="flex justify-center gap-4 mt-2">
+                    <button id="zoomInBtn" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-full transition-all duration-300 transform hover:scale-105" title="Aumentar o zoom na forma de onda">+</button>
+                    <button id="zoomOutBtn" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-full transition-all duration-300 transform hover:scale-105" title="Diminuir o zoom na forma de onda">-</button>
+                </div>
+                <p class="text-sm text-gray-400 mt-2">As seções em azul claro são as partes ativas do áudio. As partes mais escuras serão removidas.</p>
+            </div>
+
+            <!-- Audio Player for Preview -->
+            <div class="mt-8">
+                <h3 class="text-xl font-semibold mb-3 text-primary">Prévia do Áudio Processado:</h3>
+                <audio id="audioPreview" controls class="w-full rounded-lg p-2" style="background-color: var(--color-card-bg);"></audio>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer Section -->
+    <footer>
+        <div class="container footer-wrapper">
+            <div class="footer-links">
+                <a href="https://www.youtube.com/@CronicasEstelaress" target="_blank" rel="noopener noreferrer" class="footer-link" title="Aceder ao nosso canal no YouTube">
+                    <svg class="youtube-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 20" aria-hidden="true">
+                        <rect width="28" height="20" rx="4" fill="#FF0000"/>
+                        <path d="M11,14 L18,10 L11,6 V14 Z" fill="#FFFFFF"/>
+                    </svg>
+                    <span>Acesse nosso canal no YouTube</span>
+                </a>
+
+                <a href="https://page-doacao.vercel.app/" target="_blank" rel="noopener noreferrer" class="donation-link" title="Apoie este projeto com uma doação">
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    <span>Apoie este projeto</span>
+                </a>
+
+                <a href="mailto:cronicasestelares.oficial@gmail.com" target="_blank" rel="noopener noreferrer" class="email-link" title="Envie-nos um e-mail">
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                    <span>cronicasestelares.oficial@gmail.com</span>
+                </a>
+            </div>
+
+            <p class="copyright-text">&copy; <span id="current-year"></span> Crônicas Estelares. Todos os sistemas operacionais.</p>
+        </div>
+    </footer>
+
+    <!-- Back to Top Button (from portal, needs JS for show/hide) -->
+    <a href="#top" class="back-to-top fixed bottom-5 right-5 z-50 cursor-pointer rounded-full w-10 h-10 flex items-center justify-center transition-all duration-300 ease-in-out hover:scale-110 opacity-0 invisible translate-y-2">
+        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+    </a>
+
+    <script>
+        const audioFile = document.getElementById('audioFile');
+        const silenceThreshold = document.getElementById('silenceThreshold');
+        const minSilenceDuration = document.getElementById('minSilenceDuration');
+        const thresholdValue = document.getElementById('thresholdValue');
+        const durationValue = document.getElementById('durationValue');
+        const processAudioBtn = document.getElementById('processAudioBtn');
+        const downloadAudioBtn = document.getElementById('downloadAudioBtn');
+        const clearAudioBtn = document.getElementById('clearAudioBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const audioPreview = document.getElementById('audioPreview');
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+        const waveformCanvas = document.getElementById('waveformCanvas');
+        const canvasCtx = waveformCanvas.getContext('2d');
+        const yearElement = document.getElementById('current-year');
+        const backToTopButton = document.querySelector(".back-to-top");
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+
+        // Get references to the process button's icon and text spans
+        const processBtnIcon = document.getElementById('processBtnIcon');
+        const processBtnText = document.getElementById('processBtnText');
+
+        // SVG icons as strings
+        const ICON_PLAY = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>';
+        const ICON_SPINNER = '<svg class="spinner" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-.5-15v3.5h-3.5V6.5h3.5zm0 8v3.5h-3.5V14.5h3.5zM15 12.5h3.5v-3.5H15v3.5zm-8 0H3.5v-3.5H7v3.5z"/></svg>';
+        const ICON_CHECK = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>';
+
+        // Drag and Drop elements
+        const appCard = document.getElementById('appCard');
+        const dropZoneOverlay = document.getElementById('dropZoneOverlay');
+
+        // Zoom buttons
+        const zoomInBtn = document.getElementById('zoomInBtn');
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+
+        // Max file size for warning (e.g., 50MB)
+        const MAX_FILE_SIZE_WARNING_MB = 50;
+        const MAX_FILE_SIZE_WARNING_BYTES = MAX_FILE_SIZE_WARNING_MB * 1024 * 1024;
+
+
+        let audioContext;
+        let originalBuffer = null;
+        let processedBlob = null;
+        let currentZoomLevel = 1; // 1 means full view
+        let viewStartSample = 0;
+        let viewEndSample = 0;
+
+        // Initial state of the process button
+        function resetProcessButton() {
+            processBtnIcon.innerHTML = ICON_PLAY;
+            processBtnText.textContent = 'Processar Áudio';
+            processAudioBtn.disabled = false;
+        }
+
+        // Initialize AudioContext
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Update slider values display
+        silenceThreshold.oninput = () => {
+            thresholdValue.textContent = silenceThreshold.value;
+            if (originalBuffer) {
+                drawWaveform(originalBuffer, parseFloat(silenceThreshold.value), parseFloat(minSilenceDuration.value));
+            }
+        };
+        minSilenceDuration.oninput = () => {
+            durationValue.textContent = minSilenceDuration.value;
+            if (originalBuffer) {
+                drawWaveform(originalBuffer, parseFloat(silenceThreshold.value), parseFloat(minSilenceDuration.value));
+            }
+        };
+
+        // Function to draw the waveform
+        function drawWaveform(buffer, threshold, minDuration) {
+            const width = waveformCanvas.width;
+            const height = waveformCanvas.height;
+            canvasCtx.clearRect(0, 0, width, height);
+
+            const channelData = buffer.getChannelData(0);
+            const totalSamples = buffer.length;
+
+            // Adjust visible range based on zoom
+            const effectiveStart = Math.floor(viewStartSample);
+            const effectiveEnd = Math.min(totalSamples, Math.floor(viewEndSample));
+            const visibleSamples = effectiveEnd - effectiveStart;
+
+            if (visibleSamples <= 0) { // Avoid division by zero or negative range
+                return;
+            }
+
+            const samplesPerPixel = visibleSamples / width;
+            const centerY = height / 2;
+
+            // Determine colors based on theme
+            const activeColor = getComputedStyle(document.documentElement).getPropertyValue('--color-primary');
+            const silentColor = body.classList.contains('light-theme') ? '#a0a0a0' : '#555';
+
+            canvasCtx.beginPath();
+            canvasCtx.strokeStyle = silentColor; // Default to silent color
+            canvasCtx.lineWidth = 1;
+
+            let inSilence = true;
+            let silenceStartPixel = 0;
+            let segmentStartPixel = 0;
+
+            for (let x = 0; x < width; x++) {
+                let sum = 0;
+                let count = 0;
+                const startSampleForPixel = effectiveStart + Math.floor(x * samplesPerPixel);
+                const endSampleForPixel = Math.min(effectiveEnd, effectiveStart + Math.floor((x + 1) * samplesPerPixel));
+
+                for (let i = startSampleForPixel; i < endSampleForPixel; i++) {
+                    if (i < channelData.length) {
+                        sum += Math.abs(channelData[i]);
+                        count++;
+                    }
+                }
+                const avgAmplitude = count > 0 ? sum / count : 0;
+
+                const barHeight = Math.min(height, avgAmplitude * height * 2);
+                const y = centerY - barHeight / 2;
+
+                if (avgAmplitude < threshold) {
+                    if (!inSilence) {
+                        inSilence = true;
+                        silenceStartPixel = x;
+                    }
+                } else {
+                    if (inSilence) {
+                        const silenceLengthPixels = x - silenceStartPixel;
+                        // Calculate silence duration in seconds for this visual segment
+                        const silenceLengthSamples = silenceLengthPixels * samplesPerPixel;
+                        const silenceLengthSeconds = silenceLengthSamples / buffer.sampleRate;
+
+                        if (silenceLengthSeconds < minDuration) {
+                            // This silence was too short, treat the previous segment as active
+                            canvasCtx.stroke(); // End current path
+                            canvasCtx.beginPath();
+                            canvasCtx.strokeStyle = activeColor;
+                            canvasCtx.moveTo(segmentStartPixel, centerY);
+                            // Redraw the short silent part as active
+                            for (let px = segmentStartPixel; px < x; px++) {
+                                let localSum = 0;
+                                let localCount = 0;
+                                const localStartSampleForPixel = effectiveStart + Math.floor(px * samplesPerPixel);
+                                const localEndSampleForPixel = Math.min(effectiveEnd, effectiveStart + Math.floor((px + 1) * samplesPerPixel));
+                                for (let i = localStartSampleForPixel; i < localEndSampleForPixel; i++) {
+                                     if (i < channelData.length) {
+                                        localSum += Math.abs(channelData[i]);
+                                        localCount++;
+                                    }
+                                }
+                                const localAvgAmplitude = localCount > 0 ? localSum / localCount : 0;
+                                const localBarHeight = Math.min(height, localAvgAmplitude * height * 2);
+                                canvasCtx.lineTo(px, centerY - localBarHeight / 2);
+                            }
+                            canvasCtx.stroke(); // End active path
+                            canvasCtx.beginPath();
+                            canvasCtx.strokeStyle = silentColor; // Reset to silent color
+                            canvasCtx.moveTo(x, centerY); // Start new silent path
+                        } else {
+                            // Valid silence detected, end previous active segment
+                            canvasCtx.stroke(); // End current path
+                            canvasCtx.beginPath();
+                            canvasCtx.strokeStyle = silentColor; // Start new silent path
+                            canvasCtx.moveTo(x, centerY);
+                        }
+                        segmentStartPixel = x; // Start new active segment from here
+                        inSilence = false;
+                    }
+                }
+
+                if (!inSilence) { // Draw active segment
+                    if (canvasCtx.strokeStyle !== activeColor) {
+                        canvasCtx.stroke(); // End current path
+                        canvasCtx.beginPath();
+                        canvasCtx.strokeStyle = activeColor;
+                        canvasCtx.moveTo(x, centerY);
+                    }
+                    canvasCtx.lineTo(x, y);
+                    canvasCtx.lineTo(x, centerY + barHeight / 2);
+                } else { // Draw silent segment
+                    if (canvasCtx.strokeStyle !== silentColor) {
+                        canvasCtx.stroke(); // End current path
+                        canvasCtx.beginPath();
+                        canvasCtx.strokeStyle = silentColor;
+                        canvasCtx.moveTo(x, centerY);
+                    }
+                    // For silent parts, just draw a thin line or nothing to represent silence
+                    canvasCtx.lineTo(x, centerY);
+                }
+            }
+            canvasCtx.stroke(); // Final stroke for the last path
+        }
+
+
+        // Function to handle file processing
+        async function handleFile(file) {
+            if (!file) {
+                statusMessage.textContent = 'Nenhum arquivo selecionado.';
+                processAudioBtn.disabled = true;
+                downloadAudioBtn.disabled = true;
+                audioPreview.src = '';
+                originalBuffer = null;
+                processedBlob = null;
+                canvasCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+                fileNameDisplay.textContent = 'Nenhum arquivo selecionado'; // Clear file name display
+                resetProcessButton(); // Reset button state
+                return;
+            }
+
+            // File size warning
+            if (file.size > MAX_FILE_SIZE_WARNING_BYTES) {
+                statusMessage.textContent = `Atenção: Arquivo muito grande (${(file.size / (1024 * 1024)).toFixed(2)} MB). Pode haver lentidão ou falha no processamento.`;
+                statusMessage.style.color = 'orange'; // Highlight warning
+            } else {
+                statusMessage.textContent = 'Carregando áudio...';
+                statusMessage.style.color = ''; // Reset color
+            }
+
+            processAudioBtn.disabled = true;
+            downloadAudioBtn.disabled = true;
+            fileNameDisplay.textContent = file.name; // Display selected file name
+            resetProcessButton(); // Ensure button is reset when a new file is selected
+
+            initAudioContext();
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const arrayBuffer = e.target.result;
+                    originalBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+                    // Initialize zoom to show full waveform
+                    viewStartSample = 0;
+                    viewEndSample = originalBuffer.length;
+                    currentZoomLevel = 1;
+
+                    statusMessage.textContent = `Áudio "${file.name}" carregado. Pronto para processar.`;
+                    processAudioBtn.disabled = false;
+                    drawWaveform(originalBuffer, parseFloat(silenceThreshold.value), parseFloat(minSilenceDuration.value));
+                } catch (error) {
+                    statusMessage.textContent = `Erro ao carregar ou decodificar o áudio: ${error.message}. Por favor, tente um arquivo de áudio válido.`;
+                    statusMessage.style.color = 'red'; // Highlight error
+                    console.error('Erro ao decodificar áudio:', error);
+                    originalBuffer = null;
+                    processAudioBtn.disabled = true;
+                    canvasCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+                    fileNameDisplay.textContent = 'Erro ao carregar arquivo';
+                    resetProcessButton(); // Reset button on error
+                }
+            };
+            reader.onerror = (error) => {
+                statusMessage.textContent = `Erro ao ler o arquivo: ${error.message}`;
+                statusMessage.style.color = 'red'; // Highlight error
+                console.error('Erro ao ler arquivo:', error);
+                originalBuffer = null;
+                processAudioBtn.disabled = true;
+                canvasCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+                fileNameDisplay.textContent = 'Erro ao ler arquivo';
+                resetProcessButton(); // Reset button on error
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Handle file input change
+        audioFile.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            handleFile(file);
+        });
+
+        // Process Audio Function
+        processAudioBtn.addEventListener('click', async () => {
+            if (!originalBuffer) {
+                statusMessage.textContent = 'Por favor, carregue um arquivo de áudio primeiro.';
+                return;
+            }
+
+            statusMessage.textContent = 'Processando áudio... Isso pode levar alguns segundos.';
+            statusMessage.style.color = ''; // Reset color
+            processAudioBtn.disabled = true;
+            downloadAudioBtn.disabled = true;
+
+            // Update button state to "Processing..."
+            processBtnIcon.innerHTML = ICON_SPINNER;
+            processBtnText.textContent = 'Processando...';
+
+            try {
+                const threshold = parseFloat(silenceThreshold.value);
+                const minDuration = parseFloat(minSilenceDuration.value);
+                const sampleRate = originalBuffer.sampleRate;
+                const channelData = originalBuffer.getChannelData(0);
+
+                const minSilenceSamples = Math.floor(minDuration * sampleRate);
+
+                let activeSegments = [];
+                let inSilence = true;
+                let silenceStart = 0;
+                let segmentStart = 0;
+
+                for (let i = 0; i < channelData.length; i++) {
+                    const amplitude = Math.abs(channelData[i]);
+
+                    if (amplitude < threshold) {
+                        if (!inSilence) {
+                            inSilence = true;
+                            silenceStart = i;
+                        }
+                    } else {
+                        if (inSilence) {
+                            const silenceLength = i - silenceStart;
+                            if (silenceLength < minSilenceSamples) {
+                            } else {
+                                activeSegments.push([segmentStart, silenceStart]);
+                                segmentStart = i;
+                            }
+                            inSilence = false;
+                        }
+                    }
+                }
+
+                if (!inSilence) {
+                    activeSegments.push([segmentStart, channelData.length]);
+                } else if (channelData.length - silenceStart < minSilenceSamples && silenceStart < channelData.length) {
+                    activeSegments.push([segmentStart, channelData.length]);
+                }
+
+
+                let totalLength = 0;
+                for (const segment of activeSegments) {
+                    totalLength += (segment[1] - segment[0]);
+                }
+
+                const numChannels = originalBuffer.numberOfChannels;
+                const processedBuffer = audioContext.createBuffer(numChannels, totalLength, sampleRate);
+
+                let currentOffset = 0;
+                for (const segment of activeSegments) {
+                    const segmentLength = segment[1] - segment[0];
+                    for (let channel = 0; channel < numChannels; channel++) {
+                        const originalChannelData = originalBuffer.getChannelData(channel);
+                        const processedChannelData = processedBuffer.getChannelData(channel);
+                        for (let i = 0; i < segmentLength; i++) {
+                            processedChannelData[currentOffset + i] = originalChannelData[segment[0] + i];
+                        }
+                    }
+                    currentOffset += segmentLength;
+                }
+
+                processedBlob = audioBufferToWav(processedBuffer);
+
+                audioPreview.src = URL.createObjectURL(processedBlob);
+                audioPreview.load();
+
+                statusMessage.textContent = 'Processamento concluído! Você pode baixar ou pré-visualizar o áudio.';
+                statusMessage.style.color = ''; // Reset color
+                downloadAudioBtn.disabled = false;
+                // Update button state to "Processed!"
+                processBtnIcon.innerHTML = ICON_CHECK;
+                processBtnText.textContent = 'Processado!';
+
+            } catch (error) {
+                statusMessage.textContent = `Erro durante o processamento: ${error.message}`;
+                statusMessage.style.color = 'red'; // Highlight error
+                console.error('Erro ao processar áudio:', error);
+                resetProcessButton(); // Reset button on error
+            }
+        });
+
+        // Function to convert AudioBuffer to WAV Blob
+        function audioBufferToWav(buffer) {
+            const numChannels = buffer.numberOfChannels;
+            const sampleRate = buffer.sampleRate;
+            const format = 1;
+            const bitDepth = 16;
+
+            let interleaved = [];
+            for (let i = 0; i < buffer.length; i++) {
+                for (let channel = 0; channel < numChannels; channel++) {
+                    interleaved.push(buffer.getChannelData(channel)[i]);
+                }
+            }
+
+            const wavBuffer = new ArrayBuffer(44 + interleaved.length * 2);
+            const view = new DataView(wavBuffer);
+
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + interleaved.length * 2, true);
+            writeString(view, 8, 'WAVE');
+
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, format, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * numChannels * (bitDepth / 8), true);
+            view.setUint16(32, numChannels * (bitDepth / 8), true);
+            view.setUint16(34, bitDepth, true);
+
+            writeString(view, 36, 'data');
+            view.setUint32(40, interleaved.length * 2, true);
+
+            let offset = 44;
+            for (let i = 0; i < interleaved.length; i++) {
+                const s = Math.max(-1, Math.min(1, interleaved[i]));
+                view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+                offset += 2;
+            }
+
+            return new Blob([view], { type: 'audio/wav' });
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        // Download processed audio
+        downloadAudioBtn.addEventListener('click', () => {
+            if (processedBlob) {
+                const url = URL.createObjectURL(processedBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'audio_sem_silencio.wav';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } else {
+                statusMessage.textContent = 'Nenhum áudio processado para baixar.';
+            }
+        });
+
+        // Clear Audio Function
+        function clearAudio() {
+            audioFile.value = '';
+            audioPreview.src = '';
+            audioPreview.pause();
+            audioPreview.currentTime = 0;
+            canvasCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+            originalBuffer = null;
+            processedBlob = null;
+            statusMessage.textContent = 'Aguardando novo arquivo de áudio...';
+            statusMessage.style.color = ''; // Reset color
+            processAudioBtn.disabled = true;
+            downloadAudioBtn.disabled = true;
+            fileNameDisplay.textContent = 'Nenhum arquivo selecionado'; // Clear file name display
+            resetProcessButton(); // Reset button state on clear
+            // Reset zoom level
+            currentZoomLevel = 1;
+            viewStartSample = 0;
+            viewEndSample = 0;
+        }
+
+        clearAudioBtn.addEventListener('click', clearAudio);
+
+        // Theme Toggle Logic
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('light-theme');
+            const isLightTheme = body.classList.contains('light-theme');
+            localStorage.setItem('theme', isLightTheme ? 'light' : 'dark');
+            if (originalBuffer) {
+                drawWaveform(originalBuffer, parseFloat(silenceThreshold.value), parseFloat(minSilenceDuration.value));
+            }
+        });
+
+        // Apply stored theme on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const storedTheme = localStorage.getItem('theme');
+            if (storedTheme === 'light') {
+                body.classList.add('light-theme');
+            }
+
+            if (yearElement) {
+                yearElement.textContent = new Date().getFullYear();
+            }
+
+            window.addEventListener("scroll", () => {
+                if (window.scrollY > 300) {
+                    backToTopButton.classList.add("opacity-100", "visible", "translate-y-0");
+                    backToTopButton.classList.remove("opacity-0", "invisible", "translate-y-2");
+                } else {
+                    backToTopButton.classList.remove("opacity-100", "visible", "translate-y-0");
+                    backToTopButton.classList.add("opacity-0", "invisible", "translate-y-2");
+                }
+            });
+
+            resetProcessButton(); // Set initial button state on page load
+        });
+
+        // Handle canvas resizing for responsiveness
+        function resizeCanvas() {
+            waveformCanvas.width = waveformCanvas.offsetWidth;
+            waveformCanvas.height = waveformCanvas.offsetHeight;
+            if (originalBuffer) {
+                drawWaveform(originalBuffer, parseFloat(silenceThreshold.value), parseFloat(minSilenceDuration.value));
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+
+        // Drag and Drop functionality
+        appCard.addEventListener('dragover', (e) => {
+            e.preventDefault(); // Prevent default to allow drop
+            dropZoneOverlay.classList.add('drag-over');
+        });
+
+        appCard.addEventListener('dragleave', (e) => {
+            // Only remove drag-over if leaving the main appCard, not just child elements
+            if (!appCard.contains(e.relatedTarget)) {
+                dropZoneOverlay.classList.remove('drag-over');
+            }
+        });
+
+        appCard.addEventListener('drop', (e) => {
+            e.preventDefault(); // Prevent default to allow drop
+            dropZoneOverlay.classList.remove('drag-over');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        // Zoom functionality for waveform
+        zoomInBtn.addEventListener('click', () => {
+            if (!originalBuffer) return;
+            const currentVisibleDuration = (viewEndSample - viewStartSample) / originalBuffer.sampleRate;
+            const newVisibleDuration = Math.max(currentVisibleDuration * 0.8, 1); // Zoom in by 20%, min 1 second visible
+
+            const centerSample = (viewStartSample + viewEndSample) / 2;
+            viewStartSample = centerSample - (newVisibleDuration / 2) * originalBuffer.sampleRate;
+            viewEndSample = centerSample + (newVisibleDuration / 2) * originalBuffer.sampleRate;
+
+            // Clamp to buffer boundaries
+            viewStartSample = Math.max(0, viewStartSample);
+            viewEndSample = Math.min(originalBuffer.length, viewEndSample);
+
+            // If zooming in makes the end less than start (due to clamping), adjust start
+            if (viewEndSample - viewStartSample < originalBuffer.sampleRate * 0.1) { // If less than 0.1s visible
+                viewStartSample = Math.max(0, viewEndSample - originalBuffer.sampleRate * 0.1);
+            }
+
+            drawWaveform(originalBuffer, parseFloat(silenceThreshold.value), parseFloat(minSilenceDuration.value));
+        });
+
+        zoomOutBtn.addEventListener('click', () => {
+            if (!originalBuffer) return;
+            const currentVisibleDuration = (viewEndSample - viewStartSample) / originalBuffer.sampleRate;
+            const newVisibleDuration = Math.min(currentVisibleDuration * 1.2, originalBuffer.duration); // Zoom out by 20%, max full duration
+
+            const centerSample = (viewStartSample + viewEndSample) / 2;
+            viewStartSample = centerSample - (newVisibleDuration / 2) * originalBuffer.sampleRate;
+            viewEndSample = centerSample + (newVisibleDuration / 2) * originalBuffer.sampleRate;
+
+            // Clamp to buffer boundaries
+            viewStartSample = Math.max(0, viewStartSample);
+            viewEndSample = Math.min(originalBuffer.length, viewEndSample);
+
+            // If zooming out makes it smaller than full view, reset to full view
+            if (viewEndSample - viewStartSample >= originalBuffer.length * 0.99) { // Check if almost full view
+                viewStartSample = 0;
+                viewEndSample = originalBuffer.length;
+            }
+
+            drawWaveform(originalBuffer, parseFloat(silenceThreshold.value), parseFloat(minSilenceDuration.value));
+        });
+    </script>
+</body>
+</html>
