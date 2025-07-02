@@ -858,18 +858,25 @@
             const format = 1;
             const bitDepth = 16;
 
-            let interleaved = [];
-            for (let i = 0; i < buffer.length; i++) {
+            const totalSamples = buffer.length;
+            const totalInterleavedSamples = totalSamples * numChannels;
+
+            // Pre-allocate the interleaved array for efficiency
+            const interleaved = new Float32Array(totalInterleavedSamples);
+
+            let offset = 0;
+            for (let i = 0; i < totalSamples; i++) {
                 for (let channel = 0; channel < numChannels; channel++) {
-                    interleaved.push(buffer.getChannelData(channel)[i]);
+                    interleaved[offset++] = buffer.getChannelData(channel)[i];
                 }
             }
 
-            const wavBuffer = new ArrayBuffer(44 + interleaved.length * 2);
-            const view = new DataView(wavBuffer);
+            // Calculate WAV buffer size correctly
+            const wavBufferSize = 44 + interleaved.length * (bitDepth / 8);
+            const view = new DataView(new ArrayBuffer(wavBufferSize));
 
             writeString(view, 0, 'RIFF');
-            view.setUint32(4, 36 + interleaved.length * 2, true);
+            view.setUint32(4, 36 + interleaved.length * (bitDepth / 8), true);
             writeString(view, 8, 'WAVE');
 
             writeString(view, 12, 'fmt ');
@@ -882,13 +889,13 @@
             view.setUint16(34, bitDepth, true);
 
             writeString(view, 36, 'data');
-            view.setUint32(40, interleaved.length * 2, true);
+            view.setUint32(40, interleaved.length * (bitDepth / 8), true);
 
-            let offset = 44;
+            let dataOffset = 44;
             for (let i = 0; i < interleaved.length; i++) {
                 const s = Math.max(-1, Math.min(1, interleaved[i]));
-                view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-                offset += 2;
+                view.setInt16(dataOffset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+                dataOffset += 2;
             }
 
             return new Blob([view], { type: 'audio/wav' });
