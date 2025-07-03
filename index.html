@@ -600,50 +600,7 @@
 
             canvasCtx.lineWidth = 1;
 
-            let currentSegmentStart = 0;
-            let isCurrentlySpeech = false;
-            
-            // Re-run simplified segment detection for drawing purposes
-            let drawingSegments = [];
-            let tempIsCurrentlySpeech = false;
-            let tempSegmentStart = 0;
-
-            for (let i = 0; i < totalSamples; i++) {
-                const amplitude = Math.abs(channelData[i]);
-
-                if (amplitude >= threshold) { // Currently speech
-                    if (!tempIsCurrentlySpeech) { // Just entered speech
-                        tempIsCurrentlySpeech = true;
-                        tempSegmentStart = i; // Mark the start of a new speech segment
-                    }
-                } else { // Currently silent
-                    if (tempIsCurrentlySpeech) { // Just entered silence from speech
-                        let tempSilenceEnd = i;
-                        while (tempSilenceEnd < totalSamples && Math.abs(channelData[tempSilenceEnd]) < threshold) {
-                            tempSilenceEnd++;
-                        }
-                        const actualSilenceLength = tempSilenceEnd - i;
-
-                        if (actualSilenceLength >= Math.floor(minDuration * buffer.sampleRate)) {
-                            // This silence is long enough to be trimmed.
-                            drawingSegments.push({ type: 'speech', start: tempSegmentStart, end: i });
-
-                            const keptSilenceEnd = Math.min(tempSilenceEnd, i + Math.floor(keepDuration * buffer.sampleRate));
-                            if (keptSilenceEnd > i) {
-                                drawingSegments.push({ type: 'kept_silence', start: i, end: keptSilenceEnd });
-                            }
-                            tempSegmentStart = tempSilenceEnd;
-                            tempIsCurrentlySpeech = false;
-                            i = tempSilenceEnd - 1; // Jump 'i' to the end of the detected silence
-                        }
-                    }
-                }
-            }
-            if (tempIsCurrentlySpeech) {
-                drawingSegments.push({ type: 'speech', start: tempSegmentStart, end: totalSamples });
-            }
-
-            // Now draw based on the identified segments
+            // --- Simplified drawing loop for performance ---
             for (let x = 0; x < width; x++) {
                 const sampleIndex = effectiveStart + Math.floor(x * samplesPerPixel);
                 if (sampleIndex >= totalSamples) continue;
@@ -652,20 +609,15 @@
                 const barHeight = Math.min(height, amplitude * height * 2);
                 const y = centerY - barHeight / 2;
 
-                let segmentColor = silentColor; // Default for unclassified or removed silence
-
-                // Find which segment this sample belongs to
-                const segment = drawingSegments.find(s => sampleIndex >= s.start && sampleIndex < s.end);
-
-                if (segment) {
-                    if (segment.type === 'speech') {
-                        segmentColor = activeColor;
-                    } else if (segment.type === 'kept_silence') {
-                        segmentColor = keptSilenceColor;
-                    }
+                // Only distinguish between active (above threshold) and silent (below threshold) for drawing
+                // The complex logic for minSilenceDuration and keepSilenceDuration is for actual audio processing,
+                // not for real-time visual representation due to performance constraints.
+                if (amplitude >= threshold) {
+                    canvasCtx.strokeStyle = activeColor;
+                } else {
+                    canvasCtx.strokeStyle = silentColor;
                 }
                 
-                canvasCtx.strokeStyle = segmentColor;
                 canvasCtx.beginPath();
                 canvasCtx.moveTo(x, centerY);
                 canvasCtx.lineTo(x, y);
@@ -837,15 +789,19 @@
                 const processedBuffer = audioContext.createBuffer(numChannels, totalProcessedLength, sampleRate);
                 let currentProcessedOffset = 0;
 
-                for (const segment of segmentsToCopy) {
-                    const segmentLength = segment[1] - segment[0];
-                    for (let channel = 0; channel < numChannels; channel++) {
-                        processedBuffer.getChannelData(channel).set(
-                            originalBuffer.getChannelData(channel).subarray(segment[0], segment[1]),
+                for (let channel = 0; channel < numChannels; channel++) {
+                    const originalChannelData = originalBuffer.getChannelData(channel);
+                    const processedChannelData = processedBuffer.getChannelData(channel);
+                    currentProcessedOffset = 0; // Reset offset for each channel
+                    for (const segment of segmentsToCopy) {
+                        const segmentLength = segment[1] - segment[0];
+                        // Use set with subarray for efficient copying
+                        processedChannelData.set(
+                            originalChannelData.subarray(segment[0], segment[1]),
                             currentProcessedOffset
                         );
+                        currentProcessedOffset += segmentLength;
                     }
-                    currentProcessedOffset += segmentLength;
                 }
 
                 processedBlob = audioBufferToWav(processedBuffer);
