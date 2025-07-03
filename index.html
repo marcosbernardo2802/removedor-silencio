@@ -392,11 +392,22 @@
 
                 <div>
                     <label for="minSilenceDuration" class="block text-lg font-medium mb-2">
-                        Duração Mínima do Silêncio (<span id="durationValue">1.0</span> segundos):
+                        Duração Mínima do Silêncio a Remover (<span id="durationValue">1.0</span> segundos):
                     </label>
                     <input type="range" id="minSilenceDuration" min="0.1" max="3.0" step="0.1" value="1.0"
-                        class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                        title="Silêncios com duração menor que este valor não serão removidos.">
                     <p class="text-sm text-gray-400 mt-1">Silêncios com duração menor que este valor não serão removidos.</p>
+                </div>
+
+                <div>
+                    <label for="keepSilenceDuration" class="block text-lg font-medium mb-2">
+                        Duração da Pausa a Manter (<span id="keepDurationValue">0.2</span> segundos):
+                    </label>
+                    <input type="range" id="keepSilenceDuration" min="0.0" max="1.0" step="0.05" value="0.2"
+                        class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                        title="Define um pequeno espaço de silêncio a ser mantido entre os segmentos de fala, simulando pausas naturais.">
+                    <p class="text-sm text-gray-400 mt-1">Um pequeno espaço de silêncio a ser mantido entre os segmentos de fala.</p>
                 </div>
             </div>
 
@@ -481,8 +492,10 @@
         const audioFile = document.getElementById('audioFile');
         const silenceThreshold = document.getElementById('silenceThreshold');
         const minSilenceDuration = document.getElementById('minSilenceDuration');
+        const keepSilenceDuration = document.getElementById('keepSilenceDuration'); // New slider
         const thresholdValue = document.getElementById('thresholdValue');
         const durationValue = document.getElementById('durationValue');
+        const keepDurationValue = document.getElementById('keepDurationValue'); // New value display
         const processAudioBtn = document.getElementById('processAudioBtn');
         const downloadAudioBtn = document.getElementById('downloadAudioBtn');
         const clearAudioBtn = document.getElementById('clearAudioBtn');
@@ -543,18 +556,24 @@
         silenceThreshold.oninput = () => {
             thresholdValue.textContent = silenceThreshold.value;
             if (originalBuffer) {
-                drawWaveform(originalBuffer, parseFloat(silenceThreshold.value), parseFloat(minSilenceDuration.value));
+                drawWaveform(originalBuffer, parseFloat(silenceThreshold.value), parseFloat(minSilenceDuration.value), parseFloat(keepSilenceDuration.value));
             }
         };
         minSilenceDuration.oninput = () => {
             durationValue.textContent = minSilenceDuration.value;
             if (originalBuffer) {
-                drawWaveform(originalBuffer, parseFloat(silenceThreshold.value), parseFloat(minSilenceDuration.value));
+                drawWaveform(originalBuffer, parseFloat(silenceThreshold.value), parseFloat(minSilenceDuration.value), parseFloat(keepSilenceDuration.value));
+            }
+        };
+        keepSilenceDuration.oninput = () => { // New slider input handler
+            keepDurationValue.textContent = keepSilenceDuration.value;
+            if (originalBuffer) {
+                drawWaveform(originalBuffer, parseFloat(silenceThreshold.value), parseFloat(minSilenceDuration.value), parseFloat(keepSilenceDuration.value));
             }
         };
 
         // Function to draw the waveform
-        function drawWaveform(buffer, threshold, minDuration) {
+        function drawWaveform(buffer, threshold, minDuration, keepDuration) {
             const width = waveformCanvas.width;
             const height = waveformCanvas.height;
             canvasCtx.clearRect(0, 0, width, height);
@@ -577,103 +596,82 @@
             // Determine colors based on theme
             const activeColor = getComputedStyle(document.documentElement).getPropertyValue('--color-primary');
             const silentColor = body.classList.contains('light-theme') ? '#a0a0a0' : '#555';
+            const keptSilenceColor = body.classList.contains('light-theme') ? '#c0c0c0' : '#444'; // Slightly different for kept silence
 
-            canvasCtx.beginPath();
-            canvasCtx.strokeStyle = silentColor; // Default to silent color
             canvasCtx.lineWidth = 1;
 
-            let inSilence = true;
-            let silenceStartPixel = 0;
-            let segmentStartPixel = 0;
+            let currentSegmentStart = 0;
+            let isCurrentlySpeech = false;
+            
+            // Re-run simplified segment detection for drawing purposes
+            let drawingSegments = [];
+            let tempIsCurrentlySpeech = false;
+            let tempSegmentStart = 0;
 
-            for (let x = 0; x < width; x++) {
-                let sum = 0;
-                let count = 0;
-                const startSampleForPixel = effectiveStart + Math.floor(x * samplesPerPixel);
-                const endSampleForPixel = Math.min(effectiveEnd, effectiveStart + Math.floor((x + 1) * samplesPerPixel));
+            for (let i = 0; i < totalSamples; i++) {
+                const amplitude = Math.abs(channelData[i]);
 
-                for (let i = startSampleForPixel; i < endSampleForPixel; i++) {
-                    if (i < channelData.length) {
-                        sum += Math.abs(channelData[i]);
-                        count++;
+                if (amplitude >= threshold) { // Currently speech
+                    if (!tempIsCurrentlySpeech) { // Just entered speech
+                        tempIsCurrentlySpeech = true;
+                        tempSegmentStart = i; // Mark the start of a new speech segment
                     }
-                }
-                const avgAmplitude = count > 0 ? sum / count : 0;
-
-                const barHeight = Math.min(height, avgAmplitude * height * 2);
-                const y = centerY - barHeight / 2;
-
-                if (avgAmplitude < threshold) {
-                    if (!inSilence) {
-                        inSilence = true;
-                        silenceStartPixel = x;
-                    }
-                } else {
-                    if (inSilence) {
-                        const silenceLengthPixels = x - silenceStartPixel;
-                        // Calculate silence duration in seconds for this visual segment
-                        const silenceLengthSamples = silenceLengthPixels * samplesPerPixel;
-                        const silenceLengthSeconds = silenceLengthSamples / buffer.sampleRate;
-
-                        if (silenceLengthSeconds < minDuration) {
-                            // This silence was too short, treat the previous segment as active
-                            canvasCtx.stroke(); // End current path
-                            canvasCtx.beginPath();
-                            canvasCtx.strokeStyle = activeColor;
-                            canvasCtx.moveTo(segmentStartPixel, centerY);
-                            // Redraw the short silent part as active
-                            for (let px = segmentStartPixel; px < x; px++) {
-                                let localSum = 0;
-                                let localCount = 0;
-                                const localStartSampleForPixel = effectiveStart + Math.floor(px * samplesPerPixel);
-                                const localEndSampleForPixel = Math.min(effectiveEnd, effectiveStart + Math.floor((px + 1) * samplesPerPixel));
-                                for (let i = localStartSampleForPixel; i < localEndSampleForPixel; i++) {
-                                     if (i < channelData.length) {
-                                        localSum += Math.abs(channelData[i]);
-                                        localCount++;
-                                    }
-                                }
-                                const localAvgAmplitude = localCount > 0 ? localSum / localCount : 0;
-                                const localBarHeight = Math.min(height, localAvgAmplitude * height * 2);
-                                canvasCtx.lineTo(px, centerY - localBarHeight / 2);
-                            }
-                            canvasCtx.stroke(); // End active path
-                            canvasCtx.beginPath();
-                            canvasCtx.strokeStyle = silentColor; // Reset to silent color
-                            canvasCtx.moveTo(x, centerY); // Start new silent path
-                        } else {
-                            // Valid silence detected, end previous active segment
-                            canvasCtx.stroke(); // End current path
-                            canvasCtx.beginPath();
-                            canvasCtx.strokeStyle = silentColor; // Start new silent path
-                            canvasCtx.moveTo(x, centerY);
+                } else { // Currently silent
+                    if (tempIsCurrentlySpeech) { // Just entered silence from speech
+                        let tempSilenceEnd = i;
+                        while (tempSilenceEnd < totalSamples && Math.abs(channelData[tempSilenceEnd]) < threshold) {
+                            tempSilenceEnd++;
                         }
-                        segmentStartPixel = x; // Start new active segment from here
-                        inSilence = false;
-                    }
-                }
+                        const actualSilenceLength = tempSilenceEnd - i;
 
-                if (!inSilence) { // Draw active segment
-                    if (canvasCtx.strokeStyle !== activeColor) {
-                        canvasCtx.stroke(); // End current path
-                        canvasCtx.beginPath();
-                        canvasCtx.strokeStyle = activeColor;
-                        canvasCtx.moveTo(x, centerY);
+                        if (actualSilenceLength >= Math.floor(minDuration * buffer.sampleRate)) {
+                            // This silence is long enough to be trimmed.
+                            drawingSegments.push({ type: 'speech', start: tempSegmentStart, end: i });
+
+                            const keptSilenceEnd = Math.min(tempSilenceEnd, i + Math.floor(keepDuration * buffer.sampleRate));
+                            if (keptSilenceEnd > i) {
+                                drawingSegments.push({ type: 'kept_silence', start: i, end: keptSilenceEnd });
+                            }
+                            tempSegmentStart = tempSilenceEnd;
+                            tempIsCurrentlySpeech = false;
+                            i = tempSilenceEnd - 1; // Jump 'i' to the end of the detected silence
+                        }
                     }
-                    canvasCtx.lineTo(x, y);
-                    canvasCtx.lineTo(x, centerY + barHeight / 2);
-                } else { // Draw silent segment
-                    if (canvasCtx.strokeStyle !== silentColor) {
-                        canvasCtx.stroke(); // End current path
-                        canvasCtx.beginPath();
-                        canvasCtx.strokeStyle = silentColor;
-                        canvasCtx.moveTo(x, centerY);
-                    }
-                    // For silent parts, just draw a thin line or nothing to represent silence
-                    canvasCtx.lineTo(x, centerY);
                 }
             }
-            canvasCtx.stroke(); // Final stroke for the last path
+            if (tempIsCurrentlySpeech) {
+                drawingSegments.push({ type: 'speech', start: tempSegmentStart, end: totalSamples });
+            }
+
+            // Now draw based on the identified segments
+            for (let x = 0; x < width; x++) {
+                const sampleIndex = effectiveStart + Math.floor(x * samplesPerPixel);
+                if (sampleIndex >= totalSamples) continue;
+
+                const amplitude = Math.abs(channelData[sampleIndex]);
+                const barHeight = Math.min(height, amplitude * height * 2);
+                const y = centerY - barHeight / 2;
+
+                let segmentColor = silentColor; // Default for unclassified or removed silence
+
+                // Find which segment this sample belongs to
+                const segment = drawingSegments.find(s => sampleIndex >= s.start && sampleIndex < s.end);
+
+                if (segment) {
+                    if (segment.type === 'speech') {
+                        segmentColor = activeColor;
+                    } else if (segment.type === 'kept_silence') {
+                        segmentColor = keptSilenceColor;
+                    }
+                }
+                
+                canvasCtx.strokeStyle = segmentColor;
+                canvasCtx.beginPath();
+                canvasCtx.moveTo(x, centerY);
+                canvasCtx.lineTo(x, y);
+                canvasCtx.lineTo(x, centerY + barHeight / 2);
+                canvasCtx.stroke();
+            }
         }
 
 
@@ -721,7 +719,7 @@
 
                     statusMessage.textContent = `Áudio "${file.name}" carregado. Pronto para processar.`;
                     processAudioBtn.disabled = false;
-                    drawWaveform(originalBuffer, parseFloat(silenceThreshold.value), parseFloat(minSilenceDuration.value));
+                    drawWaveform(originalBuffer, parseFloat(silenceThreshold.value), parseFloat(minSilenceDuration.value), parseFloat(keepSilenceDuration.value));
                 } catch (error) {
                     statusMessage.textContent = `Erro ao carregar ou decodificar o áudio: ${error.message}. Por favor, tente um arquivo de áudio válido.`;
                     statusMessage.style.color = 'red'; // Highlight error
@@ -771,64 +769,83 @@
             try {
                 const threshold = parseFloat(silenceThreshold.value);
                 const minDuration = parseFloat(minSilenceDuration.value);
+                const keepDuration = parseFloat(keepSilenceDuration.value); // Get new parameter
                 const sampleRate = originalBuffer.sampleRate;
                 const channelData = originalBuffer.getChannelData(0);
 
                 const minSilenceSamples = Math.floor(minDuration * sampleRate);
+                const keepSilenceSamples = Math.floor(keepDuration * sampleRate); // Samples to keep
 
-                let activeSegments = [];
-                let inSilence = true;
-                let silenceStart = 0;
-                let segmentStart = 0;
+                let segmentsToCopy = []; // Stores [startSample, endSample] from original buffer to copy
+                let currentSpeechSegmentStart = 0;
+                let isCurrentlySpeech = false;
 
                 for (let i = 0; i < channelData.length; i++) {
                     const amplitude = Math.abs(channelData[i]);
 
-                    if (amplitude < threshold) {
-                        if (!inSilence) {
-                            inSilence = true;
-                            silenceStart = i;
+                    if (amplitude >= threshold) { // Currently speech
+                        if (!isCurrentlySpeech) { // Just entered speech
+                            isCurrentlySpeech = true;
+                            currentSpeechSegmentStart = i; // Mark the start of a new speech segment
                         }
-                    } else {
-                        if (inSilence) {
-                            const silenceLength = i - silenceStart;
-                            if (silenceLength < minSilenceSamples) {
-                            } else {
-                                activeSegments.push([segmentStart, silenceStart]);
-                                segmentStart = i;
+                    } else { // Currently silent
+                        if (isCurrentlySpeech) { // Just entered silence from speech
+                            // This is the end of a speech segment.
+                            // Now, we need to find how long this silence lasts.
+                            let silenceEnd = i;
+                            while (silenceEnd < channelData.length && Math.abs(channelData[silenceEnd]) < threshold) {
+                                silenceEnd++;
                             }
-                            inSilence = false;
+                            const actualSilenceLength = silenceEnd - i; // Length of the detected silence
+
+                            if (actualSilenceLength >= minSilenceSamples) {
+                                // This silence is long enough to be trimmed.
+                                // Add the speech part to segmentsToCopy.
+                                segmentsToCopy.push([currentSpeechSegmentStart, i]); // Speech part ends at 'i'
+
+                                // Now, add the 'kept' silence part.
+                                // The kept silence starts at 'i' and extends for 'keepSilenceSamples',
+                                // but not beyond the actual end of the detected silence.
+                                const keptSilenceEnd = Math.min(silenceEnd, i + keepSilenceSamples);
+                                if (keptSilenceEnd > i) { // Only add if there's actual silence to keep
+                                    segmentsToCopy.push([i, keptSilenceEnd]);
+                                }
+
+                                // The next segment (speech or silence) will start after the full detected silence.
+                                currentSpeechSegmentStart = silenceEnd;
+                                isCurrentlySpeech = false; // We are now in a "removed" silence or a new speech segment
+                                i = silenceEnd - 1; // Jump 'i' to the end of the detected silence to continue scanning
+                            }
+                            // If actualSilenceLength < minSilenceSamples, we treat it as part of speech,
+                            // so 'isCurrentlySpeech' remains true and this short silence is included with the speech.
                         }
                     }
                 }
 
-                if (!inSilence) {
-                    activeSegments.push([segmentStart, channelData.length]);
-                } else if (channelData.length - silenceStart < minSilenceSamples && silenceStart < channelData.length) {
-                    activeSegments.push([segmentStart, channelData.length]);
+                // Add the very last segment if the audio ended with speech.
+                if (isCurrentlySpeech) {
+                    segmentsToCopy.push([currentSpeechSegmentStart, channelData.length]);
                 }
 
-
-                let totalLength = 0;
-                for (const segment of activeSegments) {
-                    totalLength += (segment[1] - segment[0]);
+                // Now, concatenate segmentsToCopy into processedBuffer
+                let totalProcessedLength = 0;
+                for (const segment of segmentsToCopy) {
+                    totalProcessedLength += (segment[1] - segment[0]);
                 }
 
                 const numChannels = originalBuffer.numberOfChannels;
-                const processedBuffer = audioContext.createBuffer(numChannels, totalLength, sampleRate);
+                const processedBuffer = audioContext.createBuffer(numChannels, totalProcessedLength, sampleRate);
+                let currentProcessedOffset = 0;
 
-                let currentOffset = 0;
-                for (let channel = 0; channel < numChannels; channel++) {
-                    const originalChannelData = originalBuffer.getChannelData(channel);
-                    const processedChannelData = processedBuffer.getChannelData(channel);
-                    currentOffset = 0; // Reset offset for each channel
-                    for (const segment of activeSegments) {
-                        const segmentLength = segment[1] - segment[0];
-                        for (let i = 0; i < segmentLength; i++) {
-                            processedChannelData[currentOffset + i] = originalChannelData[segment[0] + i];
-                        }
-                        currentOffset += segmentLength;
+                for (const segment of segmentsToCopy) {
+                    const segmentLength = segment[1] - segment[0];
+                    for (let channel = 0; channel < numChannels; channel++) {
+                        processedBuffer.getChannelData(channel).set(
+                            originalBuffer.getChannelData(channel).subarray(segment[0], segment[1]),
+                            currentProcessedOffset
+                        );
                     }
+                    currentProcessedOffset += segmentLength;
                 }
 
                 processedBlob = audioBufferToWav(processedBuffer);
@@ -952,7 +969,7 @@
             const isLightTheme = body.classList.contains('light-theme');
             localStorage.setItem('theme', isLightTheme ? 'light' : 'dark');
             if (originalBuffer) {
-                drawWaveform(originalBuffer, parseFloat(silenceThreshold.value), parseFloat(minSilenceDuration.value));
+                drawWaveform(originalBuffer, parseFloat(silenceThreshold.value), parseFloat(minSilenceDuration.value), parseFloat(keepSilenceDuration.value));
             }
         });
 
@@ -985,7 +1002,7 @@
             waveformCanvas.width = waveformCanvas.offsetWidth;
             waveformCanvas.height = waveformCanvas.offsetHeight;
             if (originalBuffer) {
-                drawWaveform(originalBuffer, parseFloat(silenceThreshold.value), parseFloat(minSilenceDuration.value));
+                drawWaveform(originalBuffer, parseFloat(silenceThreshold.value), parseFloat(minSilenceDuration.value), parseFloat(keepSilenceDuration.value));
             }
         }
         window.addEventListener('resize', resizeCanvas);
@@ -1034,7 +1051,7 @@
                 viewStartSample = Math.max(0, viewEndSample - originalBuffer.sampleRate * 0.1);
             }
 
-            drawWaveform(originalBuffer, parseFloat(silenceThreshold.value), parseFloat(minSilenceDuration.value));
+            drawWaveform(originalBuffer, parseFloat(silenceThreshold.value), parseFloat(minSilenceDuration.value), parseFloat(keepSilenceDuration.value));
         });
 
         zoomOutBtn.addEventListener('click', () => {
@@ -1056,7 +1073,7 @@
                 viewEndSample = originalBuffer.length;
             }
 
-            drawWaveform(originalBuffer, parseFloat(silenceThreshold.value), parseFloat(minSilenceDuration.value));
+            drawWaveform(originalBuffer, parseFloat(silenceThreshold.value), parseFloat(minSilenceDuration.value), parseFloat(keepSilenceDuration.value));
         });
     </script>
 </body>
