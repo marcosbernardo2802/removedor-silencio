@@ -138,8 +138,6 @@
     });
 </script>
 <!-- ================= FIM DO CÓDIGO CAMALEÃO ================= -->
-<!-- ================= FIM DO CÓDIGO CAMALEÃO ================= -->
-
     
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -263,8 +261,8 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 0.75rem 1.5rem; /* py-3 px-6 */
-            font-size: 1rem; /* Alterado de 1.125rem para 1rem */
+            padding: 0.4rem 0.8rem; /* Reduzido ainda mais */
+            font-size: 0.75rem; /* Reduzido para 0.75rem */
             font-weight: 700; /* font-bold */
             border-radius: 9999px; /* rounded-full */
             cursor: pointer;
@@ -279,10 +277,10 @@
             box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3); /* shadow-lg */
         }
         .custom-file-upload svg { /* Icon inside custom file upload button */
-            width: 18px; /* Diminuído de 24px para 18px */
-            height: 18px; /* Diminuído de 24px para 18px */
+            width: 12px; /* Diminuído para 12px */
+            height: 12px; /* Diminuído para 12px */
             fill: currentColor; /* Inherit color from button text */
-            margin-right: 8px; /* Add some spacing */
+            margin-right: 5px; /* Add some spacing */
         }
         .light-theme .custom-file-upload {
             color: white; /* Text color for light theme */
@@ -307,9 +305,9 @@
         /* Main actions buttons */
         .main-actions { display: flex; gap: 1rem; margin-top: 1.5rem; }
         .main-actions button {
-            flex-grow: 1; padding: 12px; font-size: 1.1em; font-weight: 700; border-radius: 8px; border: none;
+            flex-grow: 1; padding: 6px 12px; font-size: 0.75rem; font-weight: 700; border-radius: 8px; border: none;
             cursor: pointer; transition: all 0.3s ease; color: #fff; /* Default text color for buttons */
-            display: flex; align-items: center; justify-content: center; gap: 8px;
+            display: flex; align-items: center; justify-content: center; gap: 4px;
         }
         .main-actions button:hover { transform: translateY(-2px); opacity: 0.9; }
         .main-actions .process-btn { background: var(--color-primary); color: var(--color-bg); /* Text color from portal's convert-btn */ }
@@ -319,8 +317,8 @@
 
         /* Icons within buttons */
         .main-actions button svg {
-            width: 20px;
-            height: 20px;
+            width: 14px; /* Reduzido para 14px */
+            height: 14px; /* Reduzido para 14px */
             fill: currentColor; /* Inherit color from button text */
             transition: fill 0.3s ease;
         }
@@ -356,7 +354,13 @@
             transition: border-color 0.3s ease;
         }
 
-        .container { max-width: 900px; margin: 0 auto; padding: 2rem; } /* Re-added container for footer */
+        /* Forçando a largura para 100% e impedindo conflitos com o Tailwind do Portal */
+        .container { 
+            width: 100% !important; 
+            max-width: 100% !important; 
+            margin: 0 auto; 
+            padding: 2rem; 
+        }
 
         .footer-wrapper {
             display: flex;
@@ -475,6 +479,58 @@
         .drop-zone-overlay.drag-over {
             opacity: 1;
         }
+
+        /* ESTILIZAÇÃO DA BARRA DE ROLAGEM (SCROLLBAR) */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--color-bg);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--color-card-border);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--color-primary);
+        }
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--color-card-border) var(--color-bg);
+        }
+
+        /* ESTILOS DO MODAL DE CONFIRMAÇÃO */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px);
+            z-index: 2000; display: none; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        .modal-overlay.show {
+            display: flex; opacity: 1;
+        }
+        .modal-content {
+            max-width: 400px; width: 90%; margin: 0;
+            transform: translateY(20px); transition: transform 0.3s ease;
+            padding: 2rem; text-align: center;
+        }
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+        }
+        .modal-content h3 { margin-bottom: 1rem; font-size: 1.2rem; color: var(--color-text); display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .modal-content p { margin-bottom: 1.5rem; opacity: 0.8; font-size: 0.85rem; }
+        .modal-actions { display: flex; gap: 1rem; justify-content: center; }
+        .modal-actions button {
+            padding: 6px 16px; font-size: 0.75rem; font-weight: 700; border-radius: 6px; border: none; cursor: pointer; transition: all 0.2s ease;
+        }
+        .cancel-btn { background-color: transparent; border: 1px solid var(--color-card-border) !important; color: var(--color-text); }
+        .cancel-btn:hover { background-color: rgba(255,255,255,0.05); }
+        .light-theme .cancel-btn:hover { background-color: rgba(0,0,0,0.05); }
+        .confirm-btn { background-color: var(--color-secondary); color: #fff; }
+        .confirm-btn:hover { opacity: 0.9; transform: scale(1.05); }
+
     </style>
 </head>
 <body class="flex flex-col min-h-screen font-sans">
@@ -502,14 +558,14 @@
                 Solte o arquivo de áudio aqui!
             </div>
 
-            <h1 class="text-3xl font-bold text-center mb-6 text-primary">Remover Silêncio do Áudio</h1>
+            <h1 class="text-2xl font-bold text-center mb-6 text-primary">Remover Silêncio do Áudio</h1>
 
             <!-- File Input -->
             <div class="mb-6">
-                <label for="audioFile" class="block text-lg font-medium mb-2">
+                <label for="audioFile" class="block text-base font-medium mb-2">
                     <div class="flex items-center gap-2">
                         <span>Selecione um arquivo de áudio:</span>
-                        <span id="fileNameDisplay" class="text-sm text-gray-400 italic">Nenhum arquivo selecionado</span>
+                        <span id="fileNameDisplay" class="text-xs text-gray-400 italic">Nenhum arquivo selecionado</span>
                     </div>
                 </label>
                 <input type="file" id="audioFile" accept="audio/*" class="hidden">
@@ -522,32 +578,32 @@
             <!-- Controls for Silence Detection -->
             <div class="mb-6 space-y-4">
                 <div>
-                    <label for="silenceThreshold" class="block text-lg font-medium mb-2">
+                    <label for="silenceThreshold" class="block text-base font-medium mb-2">
                         Limite de Silêncio (<span id="thresholdValue">0.02</span>):
                     </label>
                     <input type="range" id="silenceThreshold" min="0.001" max="0.1" step="0.001" value="0.02"
                         class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
-                    <p class="text-sm text-gray-400 mt-1">Abaixo deste valor, o áudio é considerado silêncio. Valores menores detectam silêncios mais sutis.</p>
+                    <p class="text-xs text-gray-400 mt-1">Abaixo deste valor, o áudio é considerado silêncio. Valores menores detectam silêncios mais sutis.</p>
                 </div>
 
                 <div>
-                    <label for="minSilenceDuration" class="block text-lg font-medium mb-2">
+                    <label for="minSilenceDuration" class="block text-base font-medium mb-2">
                         Duração Mínima do Silêncio a Remover (<span id="durationValue">1.0</span> segundos):
                     </label>
                     <input type="range" id="minSilenceDuration" min="0.1" max="3.0" step="0.1" value="1.0"
                         class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                         title="Silêncios com duração menor que este valor não serão removidos.">
-                    <p class="text-sm text-gray-400 mt-1">Silêncios com duração menor que este valor não serão removidos.</p>
+                    <p class="text-xs text-gray-400 mt-1">Silêncios com duração menor que este valor não serão removidos.</p>
                 </div>
 
                 <div>
-                    <label for="keepSilenceDuration" class="block text-lg font-medium mb-2">
+                    <label for="keepSilenceDuration" class="block text-base font-medium mb-2">
                         Duração da Pausa a Manter (<span id="keepDurationValue">0.2</span> segundos):
                     </label>
                     <input type="range" id="keepSilenceDuration" min="0.0" max="1.0" step="0.05" value="0.2"
                         class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                         title="Define um pequeno espaço de silêncio a ser mantido entre os segmentos de fala, simulando pausas naturais.">
-                    <p class="text-sm text-gray-400 mt-1">Um pequeno espaço de silêncio a ser mantido entre os segmentos de fala.</p>
+                    <p class="text-xs text-gray-400 mt-1">Um pequeno espaço de silêncio a ser mantido entre os segmentos de fala.</p>
                 </div>
             </div>
 
@@ -573,28 +629,54 @@
             </div>
 
             <!-- Status Message -->
-            <div id="statusMessage" class="text-center text-sm mt-4 text-gray-300">
+            <div id="statusMessage" class="text-center text-xs mt-4 text-gray-300">
                 Aguardando arquivo de áudio...
             </div>
 
             <!-- Waveform Canvas -->
             <div class="mt-8">
-                <h3 class="text-xl font-semibold mb-3 text-primary">Visualização da Forma de Onda:</h3>
+                <h3 class="text-lg font-semibold mb-3 text-primary">Visualização da Forma de Onda:</h3>
                 <canvas id="waveformCanvas" class="w-full h-40 border border-gray-600 rounded-lg"></canvas>
                 <div class="flex justify-center gap-4 mt-2">
-                    <button id="zoomInBtn" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-full transition-all duration-300 transform hover:scale-105" title="Aumentar o zoom na forma de onda">+</button>
-                    <button id="zoomOutBtn" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-full transition-all duration-300 transform hover:scale-105" title="Diminuir o zoom na forma de onda">-</button>
+                    <button id="zoomInBtn" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-0.5 px-2 text-xs rounded-full transition-all duration-300 transform hover:scale-105" title="Aumentar o zoom na forma de onda">+</button>
+                    <button id="zoomOutBtn" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-0.5 px-2 text-xs rounded-full transition-all duration-300 transform hover:scale-105" title="Diminuir o zoom na forma de onda">-</button>
                 </div>
-                <p class="text-sm text-gray-400 mt-2">As seções em azul claro são as partes ativas do áudio. As partes mais escuras serão removidas.</p>
+                <p class="text-xs text-gray-400 mt-2">As seções em azul claro são as partes ativas do áudio. As partes mais escuras serão removidas.</p>
             </div>
 
             <!-- Audio Player for Preview -->
             <div class="mt-8">
-                <h3 class="text-xl font-semibold mb-3 text-primary">Prévia do Áudio Processado:</h3>
-                <audio id="audioPreview" controls class="w-full rounded-lg p-2" style="background-color: var(--color-card-bg);"></audio>
+                <h3 class="text-lg font-semibold mb-3 text-primary">Prévia do Áudio Processado:</h3>
+                <audio id="audioPreview" class="hidden"></audio>
+                
+                <!-- Player Customizado Estelar -->
+                <div class="custom-audio-player flex items-center gap-3 py-2 px-4 rounded-lg border" style="background-color: var(--color-bg); border-color: var(--color-card-border);">
+                    <button id="playPauseBtn" class="w-8 h-8 flex items-center justify-center rounded-full transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-md" style="background-color: var(--color-primary); color: var(--color-bg);" disabled>
+                        <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        <svg id="pauseIcon" class="hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    </button>
+                    <span id="currentTimeDisplay" class="text-xs font-mono text-gray-400 w-10 text-right">00:00</span>
+                    <input type="range" id="seekSlider" value="0" max="100" class="flex-grow h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    <span id="durationDisplay" class="text-xs font-mono text-gray-400 w-10">00:00</span>
+                </div>
             </div>
         </div>
     </main>
+
+    <!-- MODAL DE CONFIRMAÇÃO -->
+    <div id="confirmModal" class="modal-overlay">
+        <div class="modal-content app-card">
+            <h3>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="var(--color-secondary)"><path d="M12 2L1 21h22L12 2zm0 3.99L19.53 19H4.47L12 5.99zM11 10v4h2v-4h-2zm0 6v2h2v-2h-2z"/></svg>
+                Atenção
+            </h3>
+            <p>Tem a certeza que deseja limpar o áudio atual e repor a ferramenta? Esta ação não pode ser desfeita.</p>
+            <div class="modal-actions">
+                <button id="cancelClearBtn" class="cancel-btn">Cancelar</button>
+                <button id="confirmClearBtn" class="confirm-btn">Sim, Limpar</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Footer Section -->
     <footer>
@@ -648,6 +730,19 @@
         const yearElement = document.getElementById('current-year');
         const backToTopButton = document.querySelector(".back-to-top");
         const fileNameDisplay = document.getElementById('fileNameDisplay');
+
+        // Elementos do Modal
+        const confirmModal = document.getElementById('confirmModal');
+        const confirmClearBtn = document.getElementById('confirmClearBtn');
+        const cancelClearBtn = document.getElementById('cancelClearBtn');
+
+        // Elementos do Player Customizado
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const playIcon = document.getElementById('playIcon');
+        const pauseIcon = document.getElementById('pauseIcon');
+        const seekSlider = document.getElementById('seekSlider');
+        const currentTimeDisplay = document.getElementById('currentTimeDisplay');
+        const durationDisplay = document.getElementById('durationDisplay');
 
         // Get references to the process button's icon and text spans
         const processBtnIcon = document.getElementById('processBtnIcon');
@@ -1036,6 +1131,53 @@
             }
         });
 
+        // Lógica do Player Customizado
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return "00:00";
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        playPauseBtn.addEventListener('click', () => {
+            if (audioPreview.paused) {
+                audioPreview.play();
+                playIcon.classList.add('hidden');
+                pauseIcon.classList.remove('hidden');
+            } else {
+                audioPreview.pause();
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+            }
+        });
+
+        audioPreview.addEventListener('timeupdate', () => {
+            currentTimeDisplay.textContent = formatTime(audioPreview.currentTime);
+            if (audioPreview.duration) {
+                seekSlider.value = (audioPreview.currentTime / audioPreview.duration) * 100;
+            }
+        });
+
+        audioPreview.addEventListener('loadedmetadata', () => {
+            durationDisplay.textContent = formatTime(audioPreview.duration);
+            playPauseBtn.disabled = false;
+            seekSlider.disabled = false;
+        });
+
+        audioPreview.addEventListener('ended', () => {
+            playIcon.classList.remove('hidden');
+            pauseIcon.classList.add('hidden');
+            seekSlider.value = 0;
+            currentTimeDisplay.textContent = "00:00";
+        });
+
+        seekSlider.addEventListener('input', () => {
+            if (audioPreview.duration) {
+                const seekTo = audioPreview.duration * (seekSlider.value / 100);
+                audioPreview.currentTime = seekTo;
+            }
+        });
+
         // Clear Audio Function
         function clearAudio() {
             audioFile.value = '';
@@ -1051,13 +1193,44 @@
             downloadAudioBtn.disabled = true;
             fileNameDisplay.textContent = 'Nenhum arquivo selecionado'; // Clear file name display
             resetProcessButton(); // Reset button state on clear
+            
+            // Reset do Player Customizado
+            playPauseBtn.disabled = true;
+            seekSlider.disabled = true;
+            seekSlider.value = 0;
+            currentTimeDisplay.textContent = "00:00";
+            durationDisplay.textContent = "00:00";
+            playIcon.classList.remove('hidden');
+            pauseIcon.classList.add('hidden');
+
             // Reset zoom level
             currentZoomLevel = 1;
             viewStartSample = 0;
             viewEndSample = 0;
         }
 
-        clearAudioBtn.addEventListener('click', clearAudio);
+        // Lógica do Modal de Limpeza
+        const openModal = () => { confirmModal.classList.add('show'); };
+        const closeModal = () => { confirmModal.classList.remove('show'); };
+
+        clearAudioBtn.addEventListener('click', () => {
+            if (!originalBuffer) return; // Se não houver áudio, não faz nada
+            openModal();
+        });
+
+        cancelClearBtn.addEventListener('click', closeModal);
+
+        confirmClearBtn.addEventListener('click', () => {
+            clearAudio();
+            closeModal();
+            statusMessage.textContent = 'Ferramenta limpa com sucesso.';
+            setTimeout(() => { statusMessage.textContent = 'Aguardando novo arquivo de áudio...'; }, 3000);
+        });
+
+        // Fechar modal ao clicar fora da caixa
+        confirmModal.addEventListener('click', (e) => {
+            if (e.target === confirmModal) closeModal();
+        });
 
         // Theme Toggle Logic
         themeToggle.addEventListener('click', () => {
