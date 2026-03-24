@@ -268,7 +268,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             background-color: var(--color-primary);
-            color: var(--color-bg); /* Text color for dark theme */
+            color: #000; /* Texto em preto para contraste perfeito no tema escuro */
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* shadow-md */
         }
         .custom-file-upload:hover {
@@ -283,7 +283,7 @@
             margin-right: 5px; /* Add some spacing */
         }
         .light-theme .custom-file-upload {
-            color: white; /* Text color for light theme */
+            color: #fff; /* Volta para branco no tema claro (fundo azul escuro) */
         }
 
 
@@ -310,8 +310,8 @@
             display: flex; align-items: center; justify-content: center; gap: 4px;
         }
         .main-actions button:hover { transform: translateY(-2px); opacity: 0.9; }
-        .main-actions .process-btn { background: var(--color-primary); color: var(--color-bg); /* Text color from portal's convert-btn */ }
-        .light-theme .main-actions .process-btn { color: #fff; } /* Text color for light theme */
+        .main-actions .process-btn { background: var(--color-primary); color: #000; /* Texto em preto no tema escuro */ }
+        .light-theme .main-actions .process-btn { color: #fff; /* Texto branco no tema claro */ }
         .main-actions .download-btn { background: var(--color-success); }
         .main-actions .clear-btn { background: var(--color-secondary); }
 
@@ -650,14 +650,14 @@
                 <audio id="audioPreview" class="hidden"></audio>
                 
                 <!-- Player Customizado Estelar -->
-                <div class="custom-audio-player flex items-center gap-3 py-2 px-4 rounded-lg border" style="background-color: var(--color-bg); border-color: var(--color-card-border);">
-                    <button id="playPauseBtn" class="w-8 h-8 flex items-center justify-center rounded-full transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-md" style="background-color: var(--color-primary); color: var(--color-bg);" disabled>
-                        <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                        <svg id="pauseIcon" class="hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                <div class="custom-audio-player flex items-center gap-2 py-1 px-3 rounded-md border" style="background-color: var(--color-bg); border-color: var(--color-card-border);">
+                    <button id="playPauseBtn" class="w-6 h-6 flex items-center justify-center rounded-full transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm" style="background-color: var(--color-primary); color: var(--color-bg);" disabled>
+                        <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        <svg id="pauseIcon" class="hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                     </button>
-                    <span id="currentTimeDisplay" class="text-xs font-mono text-gray-400 w-10 text-right">00:00</span>
-                    <input type="range" id="seekSlider" value="0" max="100" class="flex-grow h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                    <span id="durationDisplay" class="text-xs font-mono text-gray-400 w-10">00:00</span>
+                    <span id="currentTimeDisplay" class="text-[10px] font-mono text-gray-400 w-8 text-right">00:00</span>
+                    <input type="range" id="seekSlider" value="0" max="100" class="flex-grow h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    <span id="durationDisplay" class="text-[10px] font-mono text-gray-400 w-8">00:00</span>
                 </div>
             </div>
         </div>
